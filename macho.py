@@ -21,42 +21,24 @@ class DynStruct(Struct):
     def __init__(self, little_endian=True):
         if not self._fields_:
             raise NotImplementedError("Need to be subclassed")
-        self.keys, fmts = zip(*self._fields_)
-        self.fmt = ''.join(fmts)
+        self._keys, fmts = zip(*self._fields_)
+        self._fmt = ''.join(fmts)
         pad = '<' if little_endian else '>'
-        self.fmt = ''.join(
-            (pad, self.fmt))
-        self._dict = {}
-        super().__init__(self.fmt)
+        self._fmt = ''.join(
+            (pad, self._fmt))
+        super().__init__(self._fmt)
         return
 
     def unpack_to_dict(self, buffer):
         """Unpack data into dict() corresponding to subclass definition"""
-        res = self.unpack(buffer)
-        self._dict = dict(zip(self.keys, res))
-        return self._dict
+        data = zip(self._keys, self.unpack(buffer))
+        self.__dict__.update(data)
+        return data
 
     def pack_from_dict(self, data=None):
         """Pack data into binary form using internal data mapping"""
-        if data is None:
-            data = self._dict
-        binary = [data[key] for key in self.keys]
+        binary = (getattr(self, key) for key in self._keys)
         return self.pack(*binary)
-
-    def __getattr__(self, name):
-        try:
-            return self._dict[name]
-        except KeyError as e:
-            return super().__getattribute__(name)
-
-    def __setattr__(self, name, value):
-        try:
-            super().__setattr__(name, value)
-        except AttributeError:
-            try:
-                self._dict[name] = value
-            except KeyError as e:
-                raise e
 
 
 class MachHeader(DynStruct):
