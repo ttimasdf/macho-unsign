@@ -41,13 +41,13 @@ class DynStruct(Struct):
         if data is None:
             data = self._dict
         binary = [data[key] for key in self.keys]
-        return self.pack(binary)
+        return self.pack(*binary)
 
     def __getattr__(self, name):
         try:
             return self._dict[name]
         except KeyError as e:
-            raise e
+            return super().__getattribute__(name)
 
     def __setattr__(self, name, value):
         try:

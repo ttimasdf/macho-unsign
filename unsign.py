@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-import shutil
 import mmap
-import macho
+from shutil import copyfile
 from io import SEEK_CUR
+
+import macho
 
 
 _suffix = '.unsigned'
@@ -19,14 +20,14 @@ def main(*args):
         print("Usage: {} file [outfile]".format(__file__))
         raise SystemExit
 
-    shutil.copyfile(src_file, dst_file)
+    copyfile(src_file, dst_file)
 
     f = open(dst_file, 'r+b')
-    mm = mmap.mmap(f.fileno())
+    mm = mmap.mmap(f.fileno(), 0)
 
-    macho_start = mm.seek()
+    macho_start = mm.tell()
 
-    magic = mm.read(4)
+    magic = mm[macho_start:macho_start+4]
 
     try:
         is_x64, is_little_endian = {
@@ -43,16 +44,17 @@ def main(*args):
         header = macho.MachHeader64(is_little_endian)
     else:
         header = macho.MachHeader(is_little_endian)
-    header.unpack2dict(mm.read(header.size))
-    header_modded = header
+    header.unpack_to_dict(mm.read(header.size))
 
     cmd = macho.LoadCommand()
     ld_cmd = macho.LinkeditDataCommand()
-    header_modded.ncmds -= 1
-    header_modded.sizeofcmds -= ld_cmd.size
-
-    mm.seek(-header_modded.size, SEEK_CUR)
-    mm.write(header_modded.pack_from_dict())
+    
+    header.ncmds -= 1
+    header.sizeofcmds -= ld_cmd.size
+    mm.seek(-header.size, SEEK_CUR)
+    mm.write(header.pack_from_dict())
+    header.ncmds += 1
+    header.sizeofcmds += ld_cmd.size
 
     cmd_pos = mm.tell()
     
@@ -61,7 +63,7 @@ def main(*args):
         if cmd.cmd is macho.LC_CODE_SIGNATURE:
             mm.seek(-cmd.size, SEEK_CUR)
             print("Found sig!")
-            ld_cmd.unpack2dict(mm.read(ld_cmd.size))
+            ld_cmd.unpack_to_dict(mm.read(ld_cmd.size))
             ld_pos = mm.tell()
         else:
             mm.seek(cmd.cmdsize-cmd.size, SEEK_CUR)
