@@ -1,6 +1,12 @@
 import mmap
 from . import macho
 from io import SEEK_CUR
+try:
+    from uni_patcher.logging import get_logger
+except ImportError as e:
+    from logging import getLogger as get_logger
+
+log = get_logger(__name__)
 
 
 def unsign_macho(f, pos=0):
@@ -40,7 +46,7 @@ def unsign_macho(f, pos=0):
         cmd.unpack_to_dict(mm.read(cmd.size))
         if cmd.cmd is macho.LC_CODE_SIGNATURE:
             mm.seek(-cmd.size, SEEK_CUR)
-            print("Found sig!")
+            log.info("Found sig!")
             ld_cmd.unpack_to_dict(mm.read(ld_cmd.size))
             ld_pos = mm.tell()
         else:
