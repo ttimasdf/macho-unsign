@@ -1,5 +1,5 @@
 import mmap
-import macho
+from . import macho
 from io import SEEK_CUR
 
 
