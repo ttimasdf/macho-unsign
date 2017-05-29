@@ -3,7 +3,7 @@
 from shutil import copyfile
 import unsign
 
-_suffix = '.unsigned'
+_suffix = '.backup'
 
 
 def main(*args):
@@ -19,7 +19,7 @@ def main(*args):
 
     copyfile(src_file, dst_file)
 
-    f = open(dst_file, 'r+b')
+    f = open(src_file, 'r+b')
     unsign.unsign_macho(f)
 
 
