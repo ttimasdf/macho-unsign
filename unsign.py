@@ -2,7 +2,7 @@ import mmap
 from . import macho
 from io import SEEK_CUR
 try:
-    from uni_patcher.logging import get_logger
+    from EBP.logging import get_logger
 except ImportError as e:
     from logging import getLogger as get_logger
 
