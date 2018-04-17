@@ -34,13 +34,7 @@ def unsign_macho(f, pos=0):
 
     cmd = macho.LoadCommand()
     ld_cmd = macho.LinkeditDataCommand()
-
-    header.ncmds -= 1
-    header.sizeofcmds -= ld_cmd.size
-    mm.seek(-header.size, SEEK_CUR)
-    mm.write(header.pack_from_dict())
-    header.ncmds += 1
-    header.sizeofcmds += ld_cmd.size
+    ld_pos = 0
 
     for _ in range(header.ncmds):
         cmd.unpack_to_dict(mm.read(cmd.size))
@@ -52,11 +46,20 @@ def unsign_macho(f, pos=0):
         else:
             mm.seek(cmd.cmdsize-cmd.size, SEEK_CUR)
 
+    if not ld_pos:
+        log.warning("Mach-O object is not signed at all!")
+        return -1
+
     mm.move(ld_pos-ld_cmd.size, ld_pos, mm.tell()-ld_pos)
     mm.seek(-ld_cmd.size, SEEK_CUR)
     mm.write(b'\x00'*ld_cmd.size)
     mm.seek(macho_start+ld_cmd.dataoff)
     mm.write(b'\x00'*ld_cmd.datasize)
+
+    header.ncmds -= 1
+    header.sizeofcmds -= ld_cmd.size
+    mm.seek(macho_start+4)
+    mm.write(header.pack_from_dict())
 
     mm.flush()
     return mm.tell()
