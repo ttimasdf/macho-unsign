@@ -58,7 +58,7 @@ def unsign_macho(f, pos=0):
 
     header.ncmds -= 1
     header.sizeofcmds -= ld_cmd.size
-    mm.seek(macho_start+4)
+    mm.seek(macho_start)
     mm.write(header.pack_from_dict())
 
     mm.flush()
